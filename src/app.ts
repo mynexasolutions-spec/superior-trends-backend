@@ -34,16 +34,24 @@ app.use(
       // Allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
       
-      const allowedOrigins = [env.FRONTEND_URL, env.CORS_ORIGIN];
+      const sanitize = (url: string) => url.trim().replace(/\/$/, '');
+      const allowedOrigins = [
+        sanitize(env.FRONTEND_URL),
+        sanitize(env.CORS_ORIGIN),
+        sanitize(env.MASTER_URL || '')
+      ].filter(Boolean);
+      
+      const sanitizedOrigin = sanitize(origin);
       
       if (
-        allowedOrigins.indexOf(origin) !== -1 || 
+        allowedOrigins.includes(sanitizedOrigin) || 
         origin.startsWith('http://localhost:') || 
         origin.startsWith('http://127.0.0.1:')
       ) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        console.warn(`[CORS Blocked] Origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+        callback(null, false); // Returning false instead of throwing Error avoids express 500 error responses and standardizes CORS failures
       }
     },
     credentials: true,

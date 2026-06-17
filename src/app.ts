@@ -23,6 +23,7 @@ import contactRoutes from './routes/contact.routes.js';
 import blogRoutes from './routes/blog.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import couponRoutes from './routes/coupon.routes.js';
+import bannerRoutes from './routes/banner.routes.js';
 
 const app = express();
 
@@ -34,24 +35,16 @@ app.use(
       // Allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
       
-      const sanitize = (url: string) => url.trim().replace(/\/$/, '');
-      const allowedOrigins = [
-        sanitize(env.FRONTEND_URL),
-        sanitize(env.CORS_ORIGIN),
-        sanitize(env.MASTER_URL || '')
-      ].filter(Boolean);
-      
-      const sanitizedOrigin = sanitize(origin);
+      const allowedOrigins = [env.FRONTEND_URL, env.CORS_ORIGIN];
       
       if (
-        allowedOrigins.includes(sanitizedOrigin) || 
+        allowedOrigins.indexOf(origin) !== -1 || 
         origin.startsWith('http://localhost:') || 
         origin.startsWith('http://127.0.0.1:')
       ) {
         callback(null, true);
       } else {
-        console.warn(`[CORS Blocked] Origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
-        callback(null, false); // Returning false instead of throwing Error avoids express 500 error responses and standardizes CORS failures
+        callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
@@ -84,6 +77,7 @@ app.use('/api/v1/contact', contactRoutes);
 app.use('/api/v1/blogs', blogRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/coupons', couponRoutes);
+app.use('/api/v1/banners', bannerRoutes);
 
 // Root + health (Render and browsers ping `/` and `HEAD /`)
 app.get('/', (req, res) => {

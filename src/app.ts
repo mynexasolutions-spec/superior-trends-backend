@@ -32,19 +32,31 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, etc.)
+      // Allow requests with no origin (mobile apps, curl, health checks)
       if (!origin) return callback(null, true);
-      
-      const allowedOrigins = [env.FRONTEND_URL, env.CORS_ORIGIN];
-      
+
+      const sanitize = (url: string) => url.trim().replace(/\/$/, '');
+
+      const allowedOrigins = [
+        sanitize(env.FRONTEND_URL),
+        sanitize(env.CORS_ORIGIN),
+        sanitize(env.MASTER_URL || ''),
+      ].filter(Boolean);
+
+      const sanitizedOrigin = sanitize(origin);
+
       if (
-        allowedOrigins.indexOf(origin) !== -1 || 
-        origin.startsWith('http://localhost:') || 
+        allowedOrigins.includes(sanitizedOrigin) ||
+        origin.startsWith('http://localhost:') ||
         origin.startsWith('http://127.0.0.1:')
       ) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        console.warn(
+          `[CORS Blocked] Origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`
+        );
+
+        callback(null, false);
       }
     },
     credentials: true,

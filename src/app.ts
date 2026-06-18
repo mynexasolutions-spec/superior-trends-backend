@@ -112,4 +112,4 @@ app.get('/health', (req, res) => {
 // Global Error Handler
 app.use(errorHandler);
 
-export default app;
+export default app
